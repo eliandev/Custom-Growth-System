@@ -1,36 +1,54 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SectionCard } from "../components/section-card";
+import { useBusinessContext } from "../context/business-context";
 import {
-  calendarEntries,
+  BusinessRecord,
+  CalendarRecord,
+  ProjectRecord,
   contentDistribution,
-  ideas,
-  productionItems,
   weeklyWorkflow,
 } from "../data/marketing-data";
 import { hasFirebaseConfig } from "../firebase";
+import { useFirestoreCollection } from "../lib/firestore-helpers";
+import type { IdeaRecord, ProductionRecord } from "../data/marketing-data";
 import { seedMarketingPlannerData } from "../services/seed-marketing-planner";
 
-const kpis = [
-  {
-    label: "Content ideas",
-    value: ideas.length.toString(),
-    detail: "Loaded for the 4 content pillars",
-  },
-  {
-    label: "Production pieces",
-    value: productionItems.length.toString(),
-    detail: "Initial pipeline already mapped",
-  },
-  {
-    label: "Scheduled posts",
-    value: calendarEntries.length.toString(),
-    detail: "Base calendar for the first wave",
-  },
-];
-
 export function OverviewPage() {
+  const { activeBusinessId, activeProjectId } = useBusinessContext();
+  const { items: businesses } = useFirestoreCollection<BusinessRecord>("businesses");
+  const { items: projects } = useFirestoreCollection<ProjectRecord>("projects");
+  const { items: liveIdeas } = useFirestoreCollection<IdeaRecord>("ideas");
+  const { items: liveProduction } = useFirestoreCollection<ProductionRecord>("production");
+  const { items: liveCalendar } = useFirestoreCollection<CalendarRecord>("calendar");
   const [seedStatus, setSeedStatus] = useState<string>("");
   const [isSeeding, setIsSeeding] = useState(false);
+
+  const activeBusiness = businesses.find((item) => item.id === activeBusinessId);
+  const activeProject = projects.find((item) => item.id === activeProjectId);
+
+  const kpis = useMemo(() => {
+    const visibleIdeas = liveIdeas.filter((item) => (!activeBusinessId || item.businessId === activeBusinessId) && (!activeProjectId || item.projectId === activeProjectId));
+    const visibleProduction = liveProduction.filter((item) => (!activeBusinessId || item.businessId === activeBusinessId) && (!activeProjectId || item.projectId === activeProjectId));
+    const visibleCalendar = liveCalendar.filter((item) => (!activeBusinessId || item.businessId === activeBusinessId) && (!activeProjectId || item.projectId === activeProjectId));
+
+    return [
+      {
+        label: "Content ideas",
+        value: visibleIdeas.length.toString(),
+        detail: activeProject ? activeProject.name : activeBusiness ? activeBusiness.name : "Across all businesses",
+      },
+      {
+        label: "Production pieces",
+        value: visibleProduction.length.toString(),
+        detail: "Live Firestore pipeline",
+      },
+      {
+        label: "Scheduled posts",
+        value: visibleCalendar.length.toString(),
+        detail: "Calendarized content",
+      },
+    ];
+  }, [liveIdeas, liveProduction, liveCalendar, activeBusinessId, activeProjectId, activeBusiness, activeProject]);
 
   async function handleSeed() {
     try {
@@ -38,7 +56,7 @@ export function OverviewPage() {
       setSeedStatus("");
       const result = await seedMarketingPlannerData();
       setSeedStatus(
-        `Firestore seeded: ${result.ideasCount} ideas, ${result.productionCount} production items, ${result.calendarCount} calendar entries.`,
+        `Firestore seeded: ${result.businessesCount} business, ${result.projectsCount} project, ${result.ideasCount} ideas, ${result.productionCount} production items, ${result.calendarCount} calendar entries.`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -55,9 +73,9 @@ export function OverviewPage() {
           <p className="eyebrow">Marketing Boost Planner</p>
           <h2>The custom operating system for content, consistency, and app conversion.</h2>
           <p className="hero__text">
-            This app replaces the Notion setup with a custom dashboard for
-            ideation, production, publishing, and weekly execution. The initial
-            dataset is ready to push into Firestore in one shot.
+            This app now supports multiple businesses and multiple projects
+            inside each business. Each project keeps its own content plan,
+            production queue, publishing calendar, and execution logic.
           </p>
         </div>
         <div className="hero__badge">
@@ -82,7 +100,9 @@ export function OverviewPage() {
           description="The core structure requested for the growth engine."
         >
           <ul className="list">
-            <li>3 main databases: Ideas, Production, and Calendar.</li>
+            <li>Businesses collection with strategy and offer plan per account.</li>
+            <li>Projects collection nested operationally under each business.</li>
+            <li>3 main operational databases: Ideas, Production, and Calendar.</li>
             <li>Weekly workflow, rules, distribution, and funnel playbook.</li>
             <li>One-click Firestore seeding from the custom dashboard.</li>
           </ul>
@@ -103,8 +123,8 @@ export function OverviewPage() {
         >
           <div className="seed-box">
             <p>
-              This writes `ideas`, `production`, and `calendar` collections with
-              the starter dataset you defined.
+              This writes the seeded business, project, ideas, production, and
+              calendar records for the default Leveling Academy setup.
             </p>
             <span>{seedStatus || "Ready when Firebase credentials are present."}</span>
           </div>
@@ -112,6 +132,59 @@ export function OverviewPage() {
       </div>
 
       <div className="content-grid">
+        <SectionCard
+          title="Business plan"
+          description="Strategic summary for the active business."
+        >
+          {activeBusiness ? (
+            <div className="detail-grid">
+              <div>
+                <span className="detail-label">Business</span>
+                <p>{activeBusiness.name}</p>
+              </div>
+              <div>
+                <span className="detail-label">Objective</span>
+                <p>{activeBusiness.objective}</p>
+              </div>
+              <div>
+                <span className="detail-label">Audience</span>
+                <p>{activeBusiness.audience}</p>
+              </div>
+              <div>
+                <span className="detail-label">Offer</span>
+                <p>{activeBusiness.offer}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="status-text">Select a business to see its plan summary here.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Project plan" description="Execution summary for the active project.">
+          {activeProject ? (
+            <div className="detail-grid">
+              <div>
+                <span className="detail-label">Project</span>
+                <p>{activeProject.name}</p>
+              </div>
+              <div>
+                <span className="detail-label">Objective</span>
+                <p>{activeProject.objective}</p>
+              </div>
+              <div>
+                <span className="detail-label">Audience</span>
+                <p>{activeProject.audience}</p>
+              </div>
+              <div>
+                <span className="detail-label">Offer</span>
+                <p>{activeProject.offer}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="status-text">Select a project to see its plan summary here.</p>
+          )}
+        </SectionCard>
+
         <SectionCard
           title="Weekly flow"
           description="Designed to keep consistency without overload."

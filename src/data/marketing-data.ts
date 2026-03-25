@@ -1,4 +1,30 @@
+export type BusinessRecord = {
+  name: string;
+  niche: string;
+  objective: string;
+  audience: string;
+  offer: string;
+  acquisitionPlan: string;
+  conversionPlan: string;
+  channels: string;
+  status: "Activo" | "Pausado" | "Planeacion";
+  notes: string;
+};
+
+export type ProjectRecord = {
+  businessId: string;
+  name: string;
+  objective: string;
+  offer: string;
+  audience: string;
+  channels: string;
+  status: "Activo" | "Pausado" | "Planeacion";
+  notes: string;
+};
+
 export type IdeaRecord = {
+  businessId?: string;
+  projectId?: string;
   title: string;
   pillar: "Disciplina" | "Mentalidad" | "Anime" | "Progreso";
   format: "Reel" | "Carrusel" | "Post" | "Story";
@@ -17,6 +43,8 @@ export type IdeaRecord = {
 };
 
 export type ProductionRecord = {
+  businessId?: string;
+  projectId?: string;
   piece: string;
   ideaTitle: string;
   targetDate: string;
@@ -33,6 +61,8 @@ export type ProductionRecord = {
 };
 
 export type CalendarRecord = {
+  businessId?: string;
+  projectId?: string;
   publication: string;
   publicationDate: string;
   platform: "Instagram";
@@ -48,10 +78,13 @@ export type CalendarRecord = {
   copyFinal: string;
   ctaFinal: string;
   result: "Pendiente" | "Bueno" | "Excelente" | "Bajo";
+  metrics?: string;
+  learning?: string;
 };
 
 export const pillarOptions = ["Disciplina", "Mentalidad", "Anime", "Progreso"] as const;
 export const formatOptions = ["Reel", "Carrusel", "Post", "Story"] as const;
+export const businessStatusOptions = ["Activo", "Pausado", "Planeacion"] as const;
 export const ideaObjectiveOptions = [
   "Alcance",
   "Engagement",
@@ -125,16 +158,16 @@ export const productionItems: ProductionRecord[] = [
 ];
 
 export const calendarEntries: CalendarRecord[] = [
-  { publication: "Reel - La disciplina le gana al talento", publicationDate: "2026-04-07 18:00", platform: "Instagram", type: "Reel", pillar: "Disciplina", objective: "Alcance", state: "Planificado", copyFinal: "No necesitas más motivación. Necesitas un sistema.", ctaFinal: "Guarda este reel si eliges disciplina.", result: "Pendiente" },
-  { publication: "Reel - Nadie ve tus entrenamientos silenciosos", publicationDate: "2026-04-08 18:00", platform: "Instagram", type: "Reel", pillar: "Progreso", objective: "Engagement", state: "Planificado", copyFinal: "El verdadero cambio empieza cuando nadie te aplaude.", ctaFinal: "Comenta “level up”.", result: "Pendiente" },
-  { publication: "Reel - Arco de preparación", publicationDate: "2026-04-09 18:00", platform: "Instagram", type: "Reel", pillar: "Anime", objective: "Alcance", state: "Planificado", copyFinal: "Todo protagonista tiene un arco donde nadie cree en él.", ctaFinal: "Sígueme para más contenido.", result: "Pendiente" },
-  { publication: "Carrusel - Tu vida necesita stats", publicationDate: "2026-04-10 18:00", platform: "Instagram", type: "Carrusel", pillar: "Progreso", objective: "Engagement", state: "Planificado", copyFinal: "Si tu vida fuera un RPG, ¿qué stat tienes más baja?", ctaFinal: "Comenta tu stat más baja.", result: "Pendiente" },
-  { publication: "Reel - No ocupas motivación, ocupas sistema", publicationDate: "2026-04-11 18:00", platform: "Instagram", type: "Reel", pillar: "Mentalidad", objective: "Alcance", state: "Planificado", copyFinal: "La motivación falla. El sistema te sostiene.", ctaFinal: "Guarda este video.", result: "Pendiente" },
-  { publication: "Carrusel - Qué hacer cuando no quieres entrenar", publicationDate: "2026-04-12 18:00", platform: "Instagram", type: "Carrusel", pillar: "Disciplina", objective: "Guardados", state: "Planificado", copyFinal: "La disciplina empieza exactamente cuando no tienes ganas.", ctaFinal: "Guarda este carrusel.", result: "Pendiente" },
-  { publication: "Carrusel - Sistema de progreso semanal", publicationDate: "2026-04-14 18:00", platform: "Instagram", type: "Carrusel", pillar: "Progreso", objective: "Conversión", state: "Planificado", copyFinal: "Así se ve una semana cuando dejas de improvisar.", ctaFinal: "Comenta “sistema”.", result: "Pendiente" },
-  { publication: "Reel - Si Goku se rindiera en el día 3", publicationDate: "2026-04-15 18:00", platform: "Instagram", type: "Reel", pillar: "Anime", objective: "Alcance", state: "Planificado", copyFinal: "Imagínate abandonar antes del entrenamiento que te cambia.", ctaFinal: "Etiqueta a alguien.", result: "Pendiente" },
-  { publication: "Carrusel - Hábitos mínimos para subir de nivel", publicationDate: "2026-04-16 18:00", platform: "Instagram", type: "Carrusel", pillar: "Progreso", objective: "Guardados", state: "Planificado", copyFinal: "No necesitas cambiar tu vida en un día. Necesitas 4 hábitos base.", ctaFinal: "Guarda este checklist.", result: "Pendiente" },
-  { publication: "Reel - La app que convierte tu progreso en juego", publicationDate: "2026-04-17 18:00", platform: "Instagram", type: "Reel", pillar: "Progreso", objective: "Conversión", state: "Planificado", copyFinal: "¿Y si entrenar se sintiera como subir de nivel en un RPG?", ctaFinal: "Sígueme si quieres probarla.", result: "Pendiente" },
+  { publication: "Reel - La disciplina le gana al talento", publicationDate: "2026-04-07 18:00", platform: "Instagram", type: "Reel", pillar: "Disciplina", objective: "Alcance", state: "Planificado", copyFinal: "No necesitas más motivación. Necesitas un sistema.", ctaFinal: "Guarda este reel si eliges disciplina.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Reel - Nadie ve tus entrenamientos silenciosos", publicationDate: "2026-04-08 18:00", platform: "Instagram", type: "Reel", pillar: "Progreso", objective: "Engagement", state: "Planificado", copyFinal: "El verdadero cambio empieza cuando nadie te aplaude.", ctaFinal: "Comenta “level up”.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Reel - Arco de preparación", publicationDate: "2026-04-09 18:00", platform: "Instagram", type: "Reel", pillar: "Anime", objective: "Alcance", state: "Planificado", copyFinal: "Todo protagonista tiene un arco donde nadie cree en él.", ctaFinal: "Sígueme para más contenido.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Carrusel - Tu vida necesita stats", publicationDate: "2026-04-10 18:00", platform: "Instagram", type: "Carrusel", pillar: "Progreso", objective: "Engagement", state: "Planificado", copyFinal: "Si tu vida fuera un RPG, ¿qué stat tienes más baja?", ctaFinal: "Comenta tu stat más baja.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Reel - No ocupas motivación, ocupas sistema", publicationDate: "2026-04-11 18:00", platform: "Instagram", type: "Reel", pillar: "Mentalidad", objective: "Alcance", state: "Planificado", copyFinal: "La motivación falla. El sistema te sostiene.", ctaFinal: "Guarda este video.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Carrusel - Qué hacer cuando no quieres entrenar", publicationDate: "2026-04-12 18:00", platform: "Instagram", type: "Carrusel", pillar: "Disciplina", objective: "Guardados", state: "Planificado", copyFinal: "La disciplina empieza exactamente cuando no tienes ganas.", ctaFinal: "Guarda este carrusel.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Carrusel - Sistema de progreso semanal", publicationDate: "2026-04-14 18:00", platform: "Instagram", type: "Carrusel", pillar: "Progreso", objective: "Conversión", state: "Planificado", copyFinal: "Así se ve una semana cuando dejas de improvisar.", ctaFinal: "Comenta “sistema”.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Reel - Si Goku se rindiera en el día 3", publicationDate: "2026-04-15 18:00", platform: "Instagram", type: "Reel", pillar: "Anime", objective: "Alcance", state: "Planificado", copyFinal: "Imagínate abandonar antes del entrenamiento que te cambia.", ctaFinal: "Etiqueta a alguien.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Carrusel - Hábitos mínimos para subir de nivel", publicationDate: "2026-04-16 18:00", platform: "Instagram", type: "Carrusel", pillar: "Progreso", objective: "Guardados", state: "Planificado", copyFinal: "No necesitas cambiar tu vida en un día. Necesitas 4 hábitos base.", ctaFinal: "Guarda este checklist.", result: "Pendiente", metrics: "", learning: "" },
+  { publication: "Reel - La app que convierte tu progreso en juego", publicationDate: "2026-04-17 18:00", platform: "Instagram", type: "Reel", pillar: "Progreso", objective: "Conversión", state: "Planificado", copyFinal: "¿Y si entrenar se sintiera como subir de nivel en un RPG?", ctaFinal: "Sígueme si quieres probarla.", result: "Pendiente", metrics: "", learning: "" },
 ];
 
 export const weeklyWorkflow = [

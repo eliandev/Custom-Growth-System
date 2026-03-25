@@ -19,10 +19,13 @@ npm run dev
 
 1. Copy `.env.example` to `.env`
 2. Fill in your Firebase project credentials
-3. Open the app and use the `Seed Firestore` action to load the starter data
+3. In Firebase Authentication, enable `Email/Password`
+4. Create at least one admin user in Firebase Auth
+5. Add `SEED_FIREBASE_EMAIL` and `SEED_FIREBASE_PASSWORD` in `.env` using that admin user
+6. Open the app, sign in, and use the planner normally
+7. Run `npm run seed` when you need to recreate the default Leveling Academy seed under the authenticated rules
 
 ## Next ideas
 
-- Add Firebase Authentication
 - Replace static views with live Firestore queries
 - Add editing, filtering, and analytics panels

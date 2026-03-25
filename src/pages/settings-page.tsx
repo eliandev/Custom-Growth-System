@@ -1,7 +1,10 @@
+import { useAuth } from "../context/auth-context";
 import { SectionCard } from "../components/section-card";
 import { hasFirebaseConfig } from "../firebase";
 
 export function SettingsPage() {
+  const { user } = useAuth();
+
   return (
     <div className="page">
       <SectionCard
@@ -15,7 +18,11 @@ export function SettingsPage() {
           </article>
           <article className="settings-item">
             <span>Next step</span>
-            <strong>Copy `.env.example` to `.env`, paste Firebase keys, then run the seed.</strong>
+            <strong>Create admin users in Firebase Auth and protect Firestore with auth-based rules.</strong>
+          </article>
+          <article className="settings-item">
+            <span>Signed user</span>
+            <strong>{user?.email ?? "No active session"}</strong>
           </article>
         </div>
       </SectionCard>
