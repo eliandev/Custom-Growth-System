@@ -5,8 +5,6 @@ import {
   BusinessRecord,
   CalendarRecord,
   ProjectRecord,
-  contentDistribution,
-  weeklyWorkflow,
 } from "../data/marketing-data";
 import { hasFirebaseConfig } from "../firebase";
 import { useFirestoreCollection } from "../lib/firestore-helpers";
@@ -26,29 +24,119 @@ export function OverviewPage() {
   const activeBusiness = businesses.find((item) => item.id === activeBusinessId);
   const activeProject = projects.find((item) => item.id === activeProjectId);
 
-  const kpis = useMemo(() => {
-    const visibleIdeas = liveIdeas.filter((item) => (!activeBusinessId || item.businessId === activeBusinessId) && (!activeProjectId || item.projectId === activeProjectId));
-    const visibleProduction = liveProduction.filter((item) => (!activeBusinessId || item.businessId === activeBusinessId) && (!activeProjectId || item.projectId === activeProjectId));
-    const visibleCalendar = liveCalendar.filter((item) => (!activeBusinessId || item.businessId === activeBusinessId) && (!activeProjectId || item.projectId === activeProjectId));
+  const scopedData = useMemo(() => {
+    const ideas = liveIdeas.filter(
+      (item) =>
+        (!activeBusinessId || item.businessId === activeBusinessId) &&
+        (!activeProjectId || item.projectId === activeProjectId),
+    );
+    const production = liveProduction.filter(
+      (item) =>
+        (!activeBusinessId || item.businessId === activeBusinessId) &&
+        (!activeProjectId || item.projectId === activeProjectId),
+    );
+    const calendar = liveCalendar.filter(
+      (item) =>
+        (!activeBusinessId || item.businessId === activeBusinessId) &&
+        (!activeProjectId || item.projectId === activeProjectId),
+    );
+
+    return { ideas, production, calendar };
+  }, [liveIdeas, liveProduction, liveCalendar, activeBusinessId, activeProjectId]);
+
+  const dashboardStats = useMemo(() => {
+    const ideasReady = scopedData.ideas.filter((item) => item.state === "Seleccionado").length;
+    const ideasInProduction = scopedData.ideas.filter(
+      (item) => item.state === "En producción",
+    ).length;
+    const scheduledPosts = scopedData.calendar.filter(
+      (item) => item.state === "Planificado" || item.state === "Programado",
+    ).length;
+    const publishedPosts = scopedData.calendar.filter(
+      (item) => item.state === "Publicado",
+    ).length;
+    const conversionContent = scopedData.ideas.filter(
+      (item) => item.objective === "Conversión",
+    ).length;
+    const guardadosContent = scopedData.ideas.filter(
+      (item) => item.objective === "Guardados",
+    ).length;
 
     return [
       {
-        label: "Content ideas",
-        value: visibleIdeas.length.toString(),
-        detail: activeProject ? activeProject.name : activeBusiness ? activeBusiness.name : "Across all businesses",
+        label: "Ideas ready",
+        value: ideasReady.toString(),
+        detail: "Selected for execution",
       },
       {
-        label: "Production pieces",
-        value: visibleProduction.length.toString(),
-        detail: "Live Firestore pipeline",
+        label: "In production",
+        value: ideasInProduction.toString(),
+        detail: "Content moving right now",
       },
       {
-        label: "Scheduled posts",
-        value: visibleCalendar.length.toString(),
-        detail: "Calendarized content",
+        label: "Scheduled",
+        value: scheduledPosts.toString(),
+        detail: "Posts queued to publish",
+      },
+      {
+        label: "Published",
+        value: publishedPosts.toString(),
+        detail: "Already shipped",
+      },
+      {
+        label: "Conversion pieces",
+        value: conversionContent.toString(),
+        detail: "Offer-facing content",
+      },
+      {
+        label: "Save-focused",
+        value: guardadosContent.toString(),
+        detail: "Retention-heavy content",
       },
     ];
-  }, [liveIdeas, liveProduction, liveCalendar, activeBusinessId, activeProjectId, activeBusiness, activeProject]);
+  }, [scopedData]);
+
+  const productionBreakdown = useMemo(
+    () => [
+      { label: "Guion", count: scopedData.production.filter((item) => item.productionState === "Guion").length },
+      { label: "Diseño", count: scopedData.production.filter((item) => item.productionState === "Diseño").length },
+      { label: "Grabación", count: scopedData.production.filter((item) => item.productionState === "Grabación").length },
+      { label: "Edición", count: scopedData.production.filter((item) => item.productionState === "Edición").length },
+      { label: "Programado", count: scopedData.production.filter((item) => item.productionState === "Programado").length },
+      { label: "Publicado", count: scopedData.production.filter((item) => item.productionState === "Publicado").length },
+    ],
+    [scopedData.production],
+  );
+
+  const upcomingCalendar = useMemo(
+    () =>
+      [...scopedData.calendar]
+        .sort((left, right) => left.publicationDate.localeCompare(right.publicationDate))
+        .slice(0, 5),
+    [scopedData.calendar],
+  );
+
+  const topIdeaBuckets = useMemo(
+    () => [
+      {
+        label: "Alcance",
+        count: scopedData.ideas.filter((item) => item.objective === "Alcance").length,
+      },
+      {
+        label: "Engagement",
+        count: scopedData.ideas.filter((item) => item.objective === "Engagement").length,
+      },
+      {
+        label: "Comunidad",
+        count: scopedData.ideas.filter((item) => item.objective === "Comunidad").length,
+      },
+      {
+        label: "Conversión",
+        count: scopedData.ideas.filter((item) => item.objective === "Conversión").length,
+      },
+    ],
+    [scopedData.ideas],
+  );
 
   async function handleSeed() {
     try {
@@ -56,7 +144,7 @@ export function OverviewPage() {
       setSeedStatus("");
       const result = await seedMarketingPlannerData();
       setSeedStatus(
-        `Firestore seeded: ${result.businessesCount} business, ${result.projectsCount} project, ${result.ideasCount} ideas, ${result.productionCount} production items, ${result.calendarCount} calendar entries.`,
+        `Seeded ${result.businessesCount} business, ${result.projectsCount} project, ${result.ideasCount} ideas, ${result.productionCount} production items, ${result.calendarCount} calendar entries.`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -68,25 +156,30 @@ export function OverviewPage() {
 
   return (
     <div className="page">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Marketing Boost Planner</p>
-          <h2>The custom operating system for content, consistency, and app conversion.</h2>
-          <p className="hero__text">
-            This app now supports multiple businesses and multiple projects
-            inside each business. Each project keeps its own content plan,
-            production queue, publishing calendar, and execution logic.
+      <div className="dashboard-banner">
+        <div className="dashboard-banner__copy">
+          <p className="eyebrow">Dashboard</p>
+          <h2>{activeProject?.name ?? activeBusiness?.name ?? "Portfolio view"}</h2>
+          <p>
+            {activeProject
+              ? activeProject.objective
+              : activeBusiness
+                ? activeBusiness.objective
+                : "Select a business or project to focus the dashboard."}
           </p>
         </div>
-        <div className="hero__badge">
-          <span>Firestore</span>
-          <strong>{hasFirebaseConfig() ? "Config detected" : "Env missing"}</strong>
+        <div className="dashboard-banner__meta">
+          <span className="pill">{activeBusiness?.name ?? "All businesses"}</span>
+          <span className="pill">{activeProject?.name ?? "All projects"}</span>
+          <span className="pill">
+            {hasFirebaseConfig() ? "Firebase connected" : "Firebase missing env"}
+          </span>
         </div>
-      </section>
+      </div>
 
-      <div className="stats-grid">
-        {kpis.map((item) => (
-          <article key={item.label} className="metric">
+      <div className="kpi-grid">
+        {dashboardStats.map((item) => (
+          <article key={item.label} className="metric metric--compact">
             <span>{item.label}</span>
             <strong>{item.value}</strong>
             <p>{item.detail}</p>
@@ -94,128 +187,63 @@ export function OverviewPage() {
         ))}
       </div>
 
-      <div className="content-grid">
-        <SectionCard
-          title="System snapshot"
-          description="The core structure requested for the growth engine."
-        >
-          <ul className="list">
-            <li>Businesses collection with strategy and offer plan per account.</li>
-            <li>Projects collection nested operationally under each business.</li>
-            <li>3 main operational databases: Ideas, Production, and Calendar.</li>
-            <li>Weekly workflow, rules, distribution, and funnel playbook.</li>
-            <li>One-click Firestore seeding from the custom dashboard.</li>
-          </ul>
+      <div className="content-grid dashboard-grid">
+        <SectionCard title="Production pipeline" description="Current execution load by stage.">
+          <div className="stack-list">
+            {productionBreakdown.map((item) => (
+              <div key={item.label} className="stack-item">
+                <span>{item.label}</span>
+                <strong>{item.count}</strong>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Upcoming posts" description="Next items in the publishing queue.">
+          {upcomingCalendar.length > 0 ? (
+            <div className="stack-list">
+              {upcomingCalendar.map((entry) => (
+                <div key={entry.id} className="stack-item stack-item--detail">
+                  <div>
+                    <strong>{entry.publication}</strong>
+                    <p>{entry.publicationDate || "No date"}</p>
+                  </div>
+                  <span className="pill">{entry.state}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="status-text">No calendar items in this scope yet.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Idea mix" description="How your current backlog is distributed by objective.">
+          <div className="stack-list">
+            {topIdeaBuckets.map((item) => (
+              <div key={item.label} className="stack-item">
+                <span>{item.label}</span>
+                <strong>{item.count}</strong>
+              </div>
+            ))}
+          </div>
         </SectionCard>
 
         <SectionCard
-          title="Seed control"
-          description="Push the initial system data into Firebase when your env is configured."
+          title="Seed data"
+          description="Recreate the default Leveling Academy business and project."
           action={
             <button
               className="ghost-button"
               disabled={!hasFirebaseConfig() || isSeeding}
               onClick={handleSeed}
             >
-              {isSeeding ? "Seeding..." : "Seed Firestore"}
+              {isSeeding ? "Seeding..." : "Run seed"}
             </button>
           }
         >
-          <div className="seed-box">
-            <p>
-              This writes the seeded business, project, ideas, production, and
-              calendar records for the default Leveling Academy setup.
-            </p>
-            <span>{seedStatus || "Ready when Firebase credentials are present."}</span>
-          </div>
-        </SectionCard>
-      </div>
-
-      <div className="content-grid">
-        <SectionCard
-          title="Business plan"
-          description="Strategic summary for the active business."
-        >
-          {activeBusiness ? (
-            <div className="detail-grid">
-              <div>
-                <span className="detail-label">Business</span>
-                <p>{activeBusiness.name}</p>
-              </div>
-              <div>
-                <span className="detail-label">Objective</span>
-                <p>{activeBusiness.objective}</p>
-              </div>
-              <div>
-                <span className="detail-label">Audience</span>
-                <p>{activeBusiness.audience}</p>
-              </div>
-              <div>
-                <span className="detail-label">Offer</span>
-                <p>{activeBusiness.offer}</p>
-              </div>
-            </div>
-          ) : (
-            <p className="status-text">Select a business to see its plan summary here.</p>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Project plan" description="Execution summary for the active project.">
-          {activeProject ? (
-            <div className="detail-grid">
-              <div>
-                <span className="detail-label">Project</span>
-                <p>{activeProject.name}</p>
-              </div>
-              <div>
-                <span className="detail-label">Objective</span>
-                <p>{activeProject.objective}</p>
-              </div>
-              <div>
-                <span className="detail-label">Audience</span>
-                <p>{activeProject.audience}</p>
-              </div>
-              <div>
-                <span className="detail-label">Offer</span>
-                <p>{activeProject.offer}</p>
-              </div>
-            </div>
-          ) : (
-            <p className="status-text">Select a project to see its plan summary here.</p>
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title="Weekly flow"
-          description="Designed to keep consistency without overload."
-        >
-          <div className="table">
-            <div className="table__row table__row--head">
-              <span>Day</span>
-              <span>Action</span>
-              <span>Result</span>
-            </div>
-            {weeklyWorkflow.map((step) => (
-              <div key={step.day} className="table__row">
-                <span>{step.day}</span>
-                <span>{step.action}</span>
-                <span>{step.outcome}</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Recommended mix"
-          description="Distribution to grow from zero before the app launch."
-        >
-          <ul className="feed">
-            {contentDistribution.map((item) => (
-              <li key={item.type}>
-                {item.type}: {item.percentage}
-              </li>
-            ))}
-          </ul>
+          <p className="status-text">
+            {seedStatus || "Use only when you want to restore the default starter records."}
+          </p>
         </SectionCard>
       </div>
     </div>

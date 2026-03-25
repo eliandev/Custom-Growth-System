@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth-context";
 import { useBusinessContext } from "../context/business-context";
 import type { BusinessRecord, ProjectRecord } from "../data/marketing-data";
@@ -16,6 +16,7 @@ const navigation = [
 ];
 
 export function DashboardLayout() {
+  const location = useLocation();
   const { user, logout } = useAuth();
   const { activeBusinessId, setActiveBusinessId, activeProjectId, setActiveProjectId } =
     useBusinessContext();
@@ -26,15 +27,22 @@ export function DashboardLayout() {
     (item) => !activeBusinessId || item.businessId === activeBusinessId,
   );
   const activeProject = visibleProjects.find((item) => item.id === activeProjectId);
+  const currentPage =
+    navigation.find((item) => item.to === location.pathname)?.label ?? "Overview";
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand__badge">MB</div>
+          <div className="brand__badge" aria-hidden="true">
+            <svg viewBox="0 0 29 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M29 17L14.5 0L0 17H29Z" fill="currentColor" />
+              <path d="M29 42L14.5 27L0 42H29Z" fill="currentColor" />
+            </svg>
+          </div>
           <div>
-            <p>Marketing Boost</p>
-            <span>Planner</span>
+            <p>Marketing Growth</p>
+            <span>System</span>
           </div>
         </div>
 
@@ -53,8 +61,8 @@ export function DashboardLayout() {
         </nav>
 
         <section className="sidebar-card">
-          <p>Portfolio planner</p>
-          <span>Businesses, projects, execution systems, and Firebase data.</span>
+          <p>Context</p>
+          <span>{activeBusiness ? activeBusiness.name : "All businesses"}</span>
           <label className="business-switcher">
             <span>Active business</span>
             <select
@@ -83,33 +91,19 @@ export function DashboardLayout() {
               ))}
             </select>
           </label>
+          <div className="sidebar-meta">
+            <p>{activeProject ? activeProject.name : "All projects"}</p>
+            <span>{user?.email ?? "No session"}</span>
+          </div>
+          <button className="subtle-button sidebar-button" onClick={() => void logout()} type="button">
+            Logout
+          </button>
         </section>
       </aside>
 
       <main className="content">
         <header className="topbar">
-          <div>
-            <p className="eyebrow">Custom Growth System</p>
-            <h1>Operate multiple businesses and multiple projects from one planner.</h1>
-            <p className="active-business-label">
-              {activeBusiness ? `Working on: ${activeBusiness.name}` : "Working on: all businesses"}
-            </p>
-            <p className="active-business-label">
-              {activeProject ? `Project: ${activeProject.name}` : "Project: all projects"}
-            </p>
-            <p className="active-business-label">
-              {user?.email ? `Signed in as: ${user.email}` : "Signed in"}
-            </p>
-          </div>
-          <div className="topbar-actions">
-            <div className="topbar__status">
-              <span className="dot" />
-              Firestore seed ready
-            </div>
-            <button className="subtle-button" onClick={() => void logout()} type="button">
-              Logout
-            </button>
-          </div>
+          <h1>{currentPage}</h1>
         </header>
 
         <Outlet />
